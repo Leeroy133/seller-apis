@@ -10,10 +10,31 @@ from seller import divide, price_conversion
 logger = logging.getLogger(__file__)
 
 '''Скрипт предназначен для автоматизации процессов управления остатками и ценами товаров на платформе Яндекс Маркет. 
-Он включает в себя функции для получения информации о товарах, их остатках и ценах, а также для обновления этих данных на платформе.
-Скрипт обеспечивает удобный и эффективный способ управления товарными запасами и ценами, минимизируя ручной труд и вероятность ошибок в процессе работы.
+    Он включает в себя функции для получения информации о товарах, их остатках и ценах, а также для обновления этих данных на платформе.
+    Скрипт обеспечивает удобный и эффективный способ управления товарными запасами и ценами, минимизируя ручной труд и вероятность ошибок в процессе работы.
 '''
 def get_product_list(page, campaign_id, access_token):
+"""Получает список товаров по заданной кампании из Яндекс Маркета.
+    
+    Args:
+        page (str): Токен страницы для постраничного доступа. Он может быть пустой, чтобы получить первую страницу.
+        campaign_id (str): Идентификатор кампании для запроса товаров.
+        access_token (str): Токен доступа для авторизации при взаимодействии 
+                            с API Яндекс Маркета.
+
+    Returns:
+        list: Список объектов товаров, полученных из API. Если товаров нет, 
+              то список будет пустым.
+
+    Examples:
+        Корректное использование:
+        >>> get_product_list('', 'your_campaign_id', 'your_access_token')
+        [{'id': '1', 'name': 'Товар 1'}, {'id': '2', 'name': 'Товар 2'}, ...]
+
+        Некорректное использование:
+        >>> get_product_list('invalid_page', 'wrong_campaign_id', 'wrong_access_token')
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: ...
+"""
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -33,6 +54,26 @@ def get_product_list(page, campaign_id, access_token):
 
 
 def update_stocks(stocks, campaign_id, access_token):
+"""Обновляет остатки товаров для заданной кампании на Яндекс Маркете.
+
+    Args:
+        stocks (list): Список товаров, остатки которых необходимо обновить.
+        campaign_id (str): Идентификатор кампании для обновления остатков.
+        access_token (str): Токен доступа для авторизации при взаимодействии с API Яндекс Маркета.
+
+    Returns:
+        dict: Ответ от API, содержащий информацию об обновлении остатков. 
+              Включает детали о выполненных операциях и возможные сообщения об ошибках.
+
+    Examples:
+        Корректное использование:
+        >>> update_stocks(['sku_1', 'sku_2'], 'your_campaign_id', 'your_access_token')
+        {'success': True, 'updated_count': 2}
+
+        Некорректное использование:
+        >>> update_stocks(['sku_1', 'sku_2'], 'wrong_campaign_id', 'wrong_access_token')
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: ...
+"""
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -49,6 +90,31 @@ def update_stocks(stocks, campaign_id, access_token):
 
 
 def update_price(prices, campaign_id, access_token):
+"""Обновляет цены товаров для заданной кампании на Яндекс Маркете.
+
+    Args:
+        prices (list): Список объектов, содержащих информацию о ценах 
+                       для обновления.
+        campaign_id (str): Идентификатор кампании для обновления цен.
+        access_token (str): Токен доступа для авторизации при взаимодействии 
+                            с API Яндекс Маркета.
+
+    Returns:
+        dict: Ответ от API, содержащий информацию об обновлении цен. 
+              Включает статус операции и подробности обновленных предложений.
+
+    Examples:
+        Корректное использование:
+        >>> update_price([{"id": "sku_1", "price": {"value": 1500, "currencyId": "RUR"}}, 
+                           {"id": "sku_2", "price": {"value": 2000, "currencyId": "RUR"}}], 
+                          'your_campaign_id', 'your_access_token')
+        {'success': True, 'updated_count': 2}
+
+        Некорректное использование:
+        >>> update_price([{"id": "sku_1", "price": {"value": 1500, "currencyId": "RUR"}}], 
+                          'wrong_campaign_id', 'wrong_access_token')
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: ...
+"""
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -65,7 +131,26 @@ def update_price(prices, campaign_id, access_token):
 
 
 def get_offer_ids(campaign_id, market_token):
-    """Получить артикулы товаров Яндекс маркета"""
+    """Получить артикулы товаров Яндекс маркета
+
+    Args:
+        campaign_id (str): Идентификатор рекламной кампании.
+        market_token (str): Токен для доступа к API Яндекс Маркета.
+
+    Returns:
+        list: Список артикулов товаров, полученных из ответа API.
+
+    Examples:
+        >>> offer_ids = get_offer_ids("12345", "abcdef123456")
+        >>> print(offer_ids)
+        ['sku1', 'sku2', 'sku3']
+
+        >>> offer_ids = get_offer_ids("67890", "ghijkl789012")
+        >>> print(offer_ids)
+
+    Raises:
+        ValueError: Если данные не могут быть получены или если ответ не содержит ключей.
+"""
     page = ""
     product_list = []
     while True:
@@ -81,6 +166,29 @@ def get_offer_ids(campaign_id, market_token):
 
 
 def create_stocks(watch_remnants, offer_ids, warehouse_id):
+"""Создать список запасов товаров для указанного склада.
+
+    Args:
+        watch_remnants (list): Список остатков товаров. Каждый элемент должен содержать
+            ключи "Код" и "Количество".
+        offer_ids (list): Список идентификаторов товаров, загруженных в Яндекс Маркет.
+        warehouse_id (str): Уникальный идентификатор склада.
+
+    Returns:
+        list: Список запасов товаров, готовый для загрузки на склад.
+
+    Examples:
+        >>> watch_remnants = [{"Код": "sku1", "Количество": "15"}, {"Код": "sku2", "Количество": "1"}]
+        >>> offer_ids = ["sku1", "sku3"]
+        >>> warehouse_id = "warehouse_123"
+        >>> stocks = create_stocks(watch_remnants, offer_ids, warehouse_id)
+        >>> print(stocks)
+        [{'sku': 'sku1', 'warehouseId': 'warehouse_123', 'items': [{'count': 15, 'type': 'FIT', 'updatedAt': '2023-10-10T12:34:56Z'}]},
+         {'sku': 'sku3', 'warehouseId': 'warehouse_123', 'items': [{'count': 0, 'type': 'FIT', 'updatedAt': '2023-10-10T12:34:56Z'}]}]
+
+    Raises:
+        ValueError: Если формат остатков товаров неверный или отсутствуют необходимые ключи.
+"""
     # Уберем то, что не загружено в market
     stocks = list()
     date = str(datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z")
@@ -126,6 +234,26 @@ def create_stocks(watch_remnants, offer_ids, warehouse_id):
 
 
 def create_prices(watch_remnants, offer_ids):
+ """Создать список цен на товары.
+
+     Args:
+        watch_remnants (list): Список остатков товаров. Каждый элемент должен содержать
+            ключи "Код" и "Цена".
+        offer_ids (list): Список идентификаторов товаров, загруженных в Яндекс Маркет.
+
+    Returns:
+        list: Список цен на товары.
+
+    Examples:
+        >>> watch_remnants = [{"Код": "sku1", "Цена": "1500"}, {"Код": "sku2", "Цена": "2500"}]
+        >>> offer_ids = ["sku1", "sku3"]
+        >>> prices = create_prices(watch_remnants, offer_ids)
+        >>> print(prices)
+        [{'id': 'sku1', 'price': {'value': 1500, 'currencyId': 'RUR'}}]
+
+    Raises:
+        ValueError: Если формат цены неверен во входных данных.
+"""
     prices = []
     for watch in watch_remnants:
         if str(watch.get("Код")) in offer_ids:
