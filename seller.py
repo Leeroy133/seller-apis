@@ -12,7 +12,32 @@ logger = logging.getLogger(__file__)
 
 
 def get_product_list(last_id, client_id, seller_token):
-    """Получить список товаров магазина озон"""
+    """Получить список товаров магазина озон
+    
+    Отправляет запрос к API Озон для получения списка товаров 
+    с учетом филтров. Возвращает товары, которые 
+    имеют все доступные значения видимости.
+
+    Args:
+        last_id (str): Идентификатор последнего товара для постраничного доступа.
+                        Значение должно быть строкой.
+        client_id (str): Идентификатор клиента, необходимый для авторизации.
+        seller_token (str): Токен продавца для доступа к API.
+
+    Returns:
+        list: Список объектов товаров, полученных из API. 
+              Если товаров нет, то список будет пустым.
+
+    Raises:
+        requests.exceptions.HTTPError: При неудачном запросе к API.
+
+    Examples:
+        >>> get_product_list('', 'your_client_id', 'your_seller_token')
+        [{'id': '1', 'name': 'Товар 1'}, {'id': '2', 'name': 'Товар 2'}, ...]
+
+        >>> get_product_list('last_id_value', 'wrong_client_id', 'wrong_token')
+        []
+    """
     url = "https://api-seller.ozon.ru/v2/product/list"
     headers = {
         "Client-Id": client_id,
@@ -32,7 +57,24 @@ def get_product_list(last_id, client_id, seller_token):
 
 
 def get_offer_ids(client_id, seller_token):
-    """Получить артикулы товаров магазина озон"""
+    """Получить артикулы товаров магазина озон
+
+    Args:
+        client_id (str): Идентификатор клиента для авторизации.
+        seller_token (str): Токен продавца для доступа к API.
+
+    Returns:
+        list: Список артикулов товаров (offer_id).
+
+    Examples:
+        Ввод правильных значений:
+        >>> get_offer_ids('your_client_id', 'your_seller_token')
+        ['offer_id_1', 'offer_id_2', ...]
+
+        Ввод неверного токена:
+        >>> get_offer_ids('your_client_id', 'wrong_token')
+        ValueError: Invalid seller token
+    """
     last_id = ""
     product_list = []
     while True:
@@ -49,7 +91,30 @@ def get_offer_ids(client_id, seller_token):
 
 
 def update_price(prices: list, client_id, seller_token):
-    """Обновить цены товаров"""
+    """Обновить цены товаров
+
+    Args:
+        prices (list): Список объектов цен для обновления, 
+                       где каждый объект должен содержать 
+                       'offer_id' и 'price'.
+        client_id (str): Идентификатор клиента для авторизации.
+        seller_token (str): Токен продавца для доступа к API.
+
+    Returns:
+        dict: Ответ от API, содержащий информацию об обновлении цен.
+
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился неудачно.
+
+    Examples:
+        Корректный ввод:
+        >>> update_price([{"offer_id": "offer_id_1", "price": 1500}], 'your_client_id', 'your_seller_token')
+        {'success': True, 'updated_count': 1}
+
+        Некорректный ввод (например, неверный токен):
+        >>> update_price([{"offer_id": "offer_id_1", "price": 1500}], 'your_client_id', 'wrong_token')
+        requests.exceptions.HTTPError: 403 Client Error: Forbidden for url: ...
+    """
     url = "https://api-seller.ozon.ru/v1/product/import/prices"
     headers = {
         "Client-Id": client_id,
@@ -62,7 +127,19 @@ def update_price(prices: list, client_id, seller_token):
 
 
 def update_stocks(stocks: list, client_id, seller_token):
-    """Обновить остатки"""
+    """Обновить остатки
+
+    Args:
+        stocks (List[Dict[str, Any]]): Список остатков с информацией о товарах.
+        client_id (str): Идентификатор клиента.
+        seller_token (str): Токен продавца для аутентификации.
+    
+    Returns:
+        Dict[str, Any]: Ответ API с информацией об обновлении остатков.
+    
+    Raises:
+        requests.HTTPError: Ошибка HTTP при выполнении запроса.
+    """
     url = "https://api-seller.ozon.ru/v1/product/import/stocks"
     headers = {
         "Client-Id": client_id,
@@ -75,7 +152,16 @@ def update_stocks(stocks: list, client_id, seller_token):
 
 
 def download_stock():
-    """Скачать файл ostatki с сайта casio"""
+    """Скачать файл ostatki с сайта casio
+
+    Returns:
+        List[Dict[str, Any]]: Список остатков часов, где каждый остаток представлен в виде словаря.
+
+    Raises:
+        requests.HTTPError: Ошибка HTTP при выполнении запроса.
+        FileNotFoundError: Ошибка, если файл остатков не найден.
+        Exception: Общая ошибка, если возникли проблемы с загрузкой или обработкой файла.
+    """
     # Скачать остатки с сайта
     casio_url = "https://timeworld.ru/upload/files/ostatki.zip"
     session = requests.Session()
@@ -116,6 +202,15 @@ def create_stocks(watch_remnants, offer_ids):
 
 
 def create_prices(watch_remnants, offer_ids):
+    """Создает список цен для часов на основе остатков и идентификаторов предложений.
+    
+    Args:
+        watch_remnants (List[Dict[str, Any]]): Список остатков часов, где каждый остаток представлен в виде словаря.
+        offer_ids (List[str]): Список идентификаторов предложений, для которых необходимо создать цены.
+    
+    Returns:
+        List[Dict[str, Any]]: Список цен для предложений с параметрами цены.
+    """
     prices = []
     for watch in watch_remnants:
         if str(watch.get("Код")) in offer_ids:
@@ -131,12 +226,46 @@ def create_prices(watch_remnants, offer_ids):
 
 
 def price_conversion(price: str) -> str:
-    """Преобразовать цену. Пример: 5'990.00 руб. -> 5990"""
+    """Преобразовать цену. Пример: 5'990.00 руб. -> 5990
+
+    Удаляет все нецифровые символы из целой части цены. 
+    Если строка содержит десятичную часть, она игнорируется.
+
+    Args:
+        price (str): Строка, представляющая цену (например, "5'990.00 руб" или "5,990.00").
+
+    Returns:
+        str: Числовое представление цены без нецифровых символов (например, "5990").
+
+    Examples:
+        >>> price_conversion("5'990.00 руб")
+        '5990'
+        
+        >>> price_conversion("5,990.00")
+        '5990'
+
+        >>> price_conversion("Цена: 99.99")
+        '99'
+
+        >>> price_conversion("Цена: $abc")
+        ''
+    """
     return re.sub("[^0-9]", "", price.split(".")[0])
 
 
 def divide(lst: list, n: int):
-    """Разделить список lst на части по n элементов"""
+    """Разделить список lst на части по n элементов
+
+    Args:
+        lst (List[int]): Список элементов, который необходимо разделить.
+        n (int): Количество элементов в каждой части.
+    
+    Yields:
+        Iterator[List[int]]: Итератор, возвращающий части списка.
+    
+    Raises:
+        ValueError: Если n меньше или равно 0.
+    """
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
 
